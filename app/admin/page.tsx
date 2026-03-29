@@ -16,6 +16,17 @@ export default function Admin() {
   const [user, setUser] = useState<any>(null)
   const [products, setProducts] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
+  
+  // Для редактирования
+  const [editingProduct, setEditingProduct] = useState<any>(null)
+  const [editName, setEditName] = useState('')
+  const [editPrice, setEditPrice] = useState('')
+  const [editImageUrl, setEditImageUrl] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editCategory, setEditCategory] = useState('')
+  const [editImageFile, setEditImageFile] = useState<File | null>(null)
+  const [editImagePreview, setEditImagePreview] = useState('')
+  
   const router = useRouter()
 
   useEffect(() => {
@@ -50,10 +61,21 @@ export default function Admin() {
     const file = e.target.files?.[0]
     if (file) {
       setImageFile(file)
-      // Создаём превью
       const reader = new FileReader()
       reader.onloadend = () => {
         setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setEditImageFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setEditImagePreview(reader.result as string)
       }
       reader.readAsDataURL(file)
     }
@@ -72,7 +94,6 @@ export default function Admin() {
       throw uploadError
     }
 
-    // Получаем публичную ссылку
     const { data } = supabase.storage
       .from('product-images')
       .getPublicUrl(filePath)
@@ -88,13 +109,11 @@ export default function Admin() {
     try {
       let imageUrl = ''
 
-      // Загружаем картинку если есть
       if (imageFile) {
         setMessage('⏳ Загрузка изображения...')
         imageUrl = await uploadImage(imageFile)
       }
 
-      // Добавляем товар в базу
       setMessage('💾 Сохранение товара...')
       const { error } = await supabase
         .from('products')
@@ -114,7 +133,6 @@ export default function Admin() {
 
       setMessage('✅ Товар успешно добавлен!')
       
-      // Очищаем форму
       setName('')
       setPrice('')
       setImageFile(null)
@@ -122,7 +140,72 @@ export default function Admin() {
       setDescription('')
       setCategory('')
       
-      // Обновляем список товаров
+      loadProducts()
+
+    } catch (error: any) {
+      setMessage('❌ Ошибка: ' + error.message)
+    }
+
+    setLoading(false)
+    setTimeout(() => setMessage(''), 5000)
+  }
+
+  const handleOpenEdit = (product: any) => {
+    setEditingProduct(product)
+    setEditName(product.name)
+    setEditPrice(product.price.toString())
+    setEditImageUrl(product.image_url)
+    setEditDescription(product.description)
+    setEditCategory(product.category || '')
+    setEditImagePreview('')
+    setEditImageFile(null)
+  }
+
+  const handleCloseEdit = () => {
+    setEditingProduct(null)
+    setEditName('')
+    setEditPrice('')
+    setEditImageUrl('')
+    setEditDescription('')
+    setEditCategory('')
+    setEditImagePreview('')
+    setEditImageFile(null)
+  }
+
+  const handleUpdateProduct = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingProduct) return
+
+    setLoading(true)
+    setMessage('')
+
+    try {
+      let imageUrl = editImageUrl
+
+      // Если загрузили новое изображение
+      if (editImageFile) {
+        setMessage('⏳ Загрузка нового изображения...')
+        imageUrl = await uploadImage(editImageFile)
+      }
+
+      setMessage('💾 Обновление товара...')
+      const { error } = await supabase
+        .from('products')
+        .update({
+          name: editName.trim(),
+          price: parseInt(editPrice),
+          image_url: imageUrl,
+          description: editDescription.trim(),
+          category: editCategory.trim(),
+        })
+        .eq('id', editingProduct.id)
+
+      if (error) {
+        throw error
+      }
+
+      setMessage('✅ Товар обновлён!')
+      handleCloseEdit()
       loadProducts()
 
     } catch (error: any) {
@@ -163,7 +246,6 @@ export default function Admin() {
     router.refresh()
   }
 
-  // Фильтрация товаров по поиску
   const filteredProducts = products.filter((product: any) => {
     const query = searchQuery.toLowerCase().trim()
     if (!query) return true
@@ -334,19 +416,126 @@ export default function Admin() {
                     <p style={styles.productPrice}>{product.price.toLocaleString('ru-RU')} ₽</p>
                     <p style={styles.productDescription}>{product.description}</p>
                   </div>
-                  <button
-                    onClick={() => handleDeleteProduct(product.id, product.name)}
-                    style={styles.deleteButton}
-                    disabled={loading}
-                  >
-                    🗑️ Удалить
-                  </button>
+                  <div style={styles.productActions}>
+                    <button
+                      onClick={() => handleOpenEdit(product)}
+                      style={styles.editButton}
+                      disabled={loading}
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDeleteProduct(product.id, product.name)}
+                      style={styles.deleteButton}
+                      disabled={loading}
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </section>
       </div>
+
+      {/* Модальное окно редактирования */}
+      {editingProduct && (
+        <div style={styles.modalOverlay} onClick={handleCloseEdit}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <h2 style={styles.modalTitle}>✏️ Редактировать товар</h2>
+              <button onClick={handleCloseEdit} style={styles.closeButton}>✕</button>
+            </div>
+            
+            <form onSubmit={handleUpdateProduct} style={styles.modalForm}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Название товара *</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  style={styles.input}
+                  required
+                />
+              </div>
+
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Категория *</label>
+                  <input
+                    type="text"
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value)}
+                    style={styles.input}
+                    required
+                  />
+                </div>
+
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Цена (₽) *</label>
+                  <input
+                    type="number"
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(e.target.value)}
+                    style={styles.input}
+                    min="0"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Текущее изображение</label>
+                <img src={editImageUrl} alt="Current" style={styles.currentImage} />
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Новое изображение (оставь пустым, если не меняешь)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleEditImageChange}
+                  style={styles.fileInput}
+                />
+                {editImagePreview && (
+                  <div style={styles.imagePreview}>
+                    <img src={editImagePreview} alt="New Preview" style={styles.previewImage} />
+                  </div>
+                )}
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Описание *</label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  style={{ ...styles.input, minHeight: '100px' as const }}
+                  required
+                />
+              </div>
+
+              <div style={styles.modalActions}>
+                <button
+                  type="button"
+                  onClick={handleCloseEdit}
+                  style={styles.cancelButton}
+                  disabled={loading}
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={loading ? styles.buttonDisabled : styles.saveButton}
+                >
+                  {loading ? '⏳ Сохранение...' : '💾 Сохранить'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div style={styles.footer}>
         <a href="/" style={styles.link}>← Вернуться на главную</a>
@@ -469,6 +658,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '8px',
     border: '1px solid #ddd',
   },
+  currentImage: {
+    maxWidth: '100%',
+    maxHeight: '200px',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+    marginTop: '5px',
+  },
   button: {
     padding: '14px',
     fontSize: '16px',
@@ -562,15 +758,27 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#888',
     lineHeight: '1.4',
   },
+  productActions: {
+    display: 'flex',
+    gap: '10px',
+  },
+  editButton: {
+    padding: '10px 15px',
+    background: '#ffc107',
+    color: '#000',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '16px',
+  },
   deleteButton: {
-    padding: '10px 20px',
+    padding: '10px 15px',
     background: '#dc3545',
     color: '#fff',
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '600',
+    fontSize: '16px',
   },
   noProducts: {
     textAlign: 'center' as const,
@@ -588,5 +796,78 @@ const styles: { [key: string]: React.CSSProperties } = {
     textDecoration: 'none',
     fontSize: '15px',
     fontWeight: '500',
+  },
+  modalOverlay: {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2000,
+    padding: '20px',
+  },
+  modal: {
+    background: '#fff',
+    borderRadius: '12px',
+    maxWidth: '600px',
+    width: '100%',
+    maxHeight: '90vh',
+    overflow: 'auto' as const,
+    boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+  },
+  modalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '20px',
+    borderBottom: '1px solid #eaeaea',
+  },
+  modalTitle: {
+    margin: 0,
+    fontSize: '22px',
+    color: '#333',
+  },
+  closeButton: {
+    background: 'none',
+    border: 'none',
+    fontSize: '24px',
+    cursor: 'pointer',
+    color: '#666',
+    padding: '5px 10px',
+  },
+  modalForm: {
+    padding: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+  },
+  modalActions: {
+    display: 'flex',
+    gap: '10px',
+    justifyContent: 'flex-end',
+  },
+  cancelButton: {
+    padding: '12px 24px',
+    fontSize: '15px',
+    fontWeight: '600',
+    background: '#f5f5f5',
+    color: '#333',
+    border: '1px solid #ddd',
+    borderRadius: '8px',
+    cursor: 'pointer',
+  },
+  saveButton: {
+    padding: '12px 24px',
+    fontSize: '15px',
+    fontWeight: '600',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
   },
 }
