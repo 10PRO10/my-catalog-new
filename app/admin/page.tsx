@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation'
 export default function Admin() {
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string>('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('')
   const [loading, setLoading] = useState(false)
@@ -45,37 +46,91 @@ export default function Admin() {
     }
   }
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setImageFile(file)
+      // Создаём превью
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const uploadImage = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+    const filePath = `${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file)
+
+    if (uploadError) {
+      throw uploadError
+    }
+
+    // Получаем публичную ссылку
+    const { data } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(filePath)
+
+    return data.publicUrl
+  }
+
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setMessage('')
 
-    const { error } = await supabase
-      .from('products')
-      .insert([
-        {
-          name: name.trim(),
-          price: parseInt(price),
-          image_url: imageUrl.trim(),
-          description: description.trim(),
-          category: category.trim(),
-        },
-      ])
+    try {
+      let imageUrl = ''
 
-    if (error) {
-      setMessage('❌ Ошибка: ' + error.message)
-    } else {
+      // Загружаем картинку если есть
+      if (imageFile) {
+        setMessage('⏳ Загрузка изображения...')
+        imageUrl = await uploadImage(imageFile)
+      }
+
+      // Добавляем товар в базу
+      setMessage('💾 Сохранение товара...')
+      const { error } = await supabase
+        .from('products')
+        .insert([
+          {
+            name: name.trim(),
+            price: parseInt(price),
+            image_url: imageUrl,
+            description: description.trim(),
+            category: category.trim(),
+          },
+        ])
+
+      if (error) {
+        throw error
+      }
+
       setMessage('✅ Товар успешно добавлен!')
+      
+      // Очищаем форму
       setName('')
       setPrice('')
-      setImageUrl('')
+      setImageFile(null)
+      setImagePreview('')
       setDescription('')
       setCategory('')
+      
+      // Обновляем список товаров
       loadProducts()
+
+    } catch (error: any) {
+      setMessage('❌ Ошибка: ' + error.message)
     }
 
     setLoading(false)
-    setTimeout(() => setMessage(''), 3000)
+    setTimeout(() => setMessage(''), 5000)
   }
 
   const handleDeleteProduct = async (productId: number, productName: string) => {
@@ -202,15 +257,19 @@ export default function Admin() {
             </div>
 
             <div style={styles.formGroup}>
-              <label style={styles.label}>Ссылка на изображение *</label>
+              <label style={styles.label}>Изображение товара *</label>
               <input
-                type="url"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                style={styles.input}
-                placeholder="https://..."
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                style={styles.fileInput}
                 required
               />
+              {imagePreview && (
+                <div style={styles.imagePreview}>
+                  <img src={imagePreview} alt="Preview" style={styles.previewImage} />
+                </div>
+              )}
             </div>
 
             <div style={styles.formGroup}>
@@ -229,7 +288,7 @@ export default function Admin() {
               disabled={loading}
               style={loading ? styles.buttonDisabled : styles.button}
             >
-              {loading ? '⏳ Добавление...' : '✨ Добавить товар'}
+              {loading ? '⏳ Загрузка...' : '✨ Добавить товар'}
             </button>
           </form>
         </section>
@@ -388,6 +447,27 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: '2px solid #e1e1e1',
     borderRadius: '8px',
     outline: 'none',
+  },
+  fileInput: {
+    padding: '10px',
+    fontSize: '14px',
+    border: '2px dashed #e1e1e1',
+    borderRadius: '8px',
+    background: '#fafafa',
+    cursor: 'pointer',
+  },
+  imagePreview: {
+    marginTop: '10px',
+    padding: '10px',
+    background: '#f5f5f5',
+    borderRadius: '8px',
+    textAlign: 'center' as const,
+  },
+  previewImage: {
+    maxWidth: '100%',
+    maxHeight: '300px',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
   },
   button: {
     padding: '14px',
