@@ -9,6 +9,7 @@ export default function Admin() {
   const [price, setPrice] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [description, setDescription] = useState('')
+  const [category, setCategory] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [user, setUser] = useState<any>(null)
@@ -41,6 +42,7 @@ export default function Admin() {
           price: parseInt(price),
           image_url: imageUrl.trim(),
           description: description.trim(),
+          category: category.trim(),
         },
       ])
 
@@ -52,6 +54,7 @@ export default function Admin() {
       setPrice('')
       setImageUrl('')
       setDescription('')
+      setCategory('')
     }
 
     setLoading(false)
@@ -119,6 +122,18 @@ export default function Admin() {
 
             <div style={styles.formRow}>
               <div style={styles.formGroup}>
+                <label style={styles.label}>Категория *</label>
+                <input
+                  type="text"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  style={styles.input}
+                  placeholder="Например: Обувь, Техника, Одежда"
+                  required
+                />
+              </div>
+
+              <div style={styles.formGroup}>
                 <label style={styles.label}>Цена (₽) *</label>
                 <input
                   type="number"
@@ -130,18 +145,18 @@ export default function Admin() {
                   required
                 />
               </div>
+            </div>
 
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Ссылка на изображение *</label>
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  style={styles.input}
-                  placeholder="https://..."
-                  required
-                />
-              </div>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Ссылка на изображение *</label>
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                style={styles.input}
+                placeholder="https://..."
+                required
+              />
             </div>
 
             <div style={styles.formGroup}>
