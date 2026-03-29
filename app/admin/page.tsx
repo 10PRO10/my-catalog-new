@@ -13,6 +13,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [user, setUser] = useState<any>(null)
+  const [products, setProducts] = useState<any[]>([])
   const router = useRouter()
 
   useEffect(() => {
@@ -23,11 +24,25 @@ export default function Admin() {
         router.push('/login')
       } else {
         setUser(data.user)
+        loadProducts()
       }
     }
     
     checkUser()
   }, [router])
+
+  const loadProducts = async () => {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('id', { ascending: false })
+    
+    if (error) {
+      console.error('Error loading products:', error)
+    } else {
+      setProducts(data || [])
+    }
+  }
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,6 +70,31 @@ export default function Admin() {
       setImageUrl('')
       setDescription('')
       setCategory('')
+      loadProducts()
+    }
+
+    setLoading(false)
+    setTimeout(() => setMessage(''), 3000)
+  }
+
+  const handleDeleteProduct = async (productId: number, productName: string) => {
+    const confirmDelete = confirm(`Вы уверены, что хотите удалить товар "${productName}"?`)
+    
+    if (!confirmDelete) return
+
+    setLoading(true)
+    setMessage('')
+
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', productId)
+
+    if (error) {
+      setMessage('❌ Ошибка при удалении: ' + error.message)
+    } else {
+      setMessage('✅ Товар удалён!')
+      loadProducts()
     }
 
     setLoading(false)
@@ -104,6 +144,7 @@ export default function Admin() {
       )}
 
       <div style={styles.content}>
+        {/* Форма добавления товара */}
         <section style={styles.section}>
           <h2 style={styles.sectionTitle}>➕ Добавить товар</h2>
           
@@ -128,7 +169,7 @@ export default function Admin() {
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   style={styles.input}
-                  placeholder="Например: Обувь, Техника, Одежда"
+                  placeholder="Например: Обувь, Техника"
                   required
                 />
               </div>
@@ -178,6 +219,39 @@ export default function Admin() {
               {loading ? '⏳ Добавление...' : '✨ Добавить товар'}
             </button>
           </form>
+        </section>
+
+        {/* Список товаров с удалением */}
+        <section style={styles.section}>
+          <h2 style={styles.sectionTitle}>📦 Товары ({products.length})</h2>
+          
+          {products.length === 0 ? (
+            <p style={styles.noProducts}>Товаров пока нет</p>
+          ) : (
+            <div style={styles.productsList}>
+              {products.map((product: any) => (
+                <div key={product.id} style={styles.productItem}>
+                  <img
+                    src={product.image_url}
+                    alt={product.name}
+                    style={styles.productImage}
+                  />
+                  <div style={styles.productInfo}>
+                    <h3 style={styles.productName}>{product.name}</h3>
+                    <p style={styles.productCategory}>📋 {product.category || 'Без категории'}</p>
+                    <p style={styles.productPrice}>{product.price.toLocaleString('ru-RU')} ₽</p>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteProduct(product.id, product.name)}
+                    style={styles.deleteButton}
+                    disabled={loading}
+                  >
+                    🗑️ Удалить
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 
@@ -300,6 +374,63 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: 'none',
     borderRadius: '8px',
     cursor: 'not-allowed',
+  },
+  productsList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px',
+  },
+  productItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px',
+    padding: '15px',
+    border: '1px solid #e1e1e1',
+    borderRadius: '8px',
+    background: '#fafafa',
+  },
+  productImage: {
+    width: '80px',
+    height: '80px',
+    objectFit: 'cover' as const,
+    borderRadius: '8px',
+  },
+  productInfo: {
+    flex: 1,
+  },
+  productName: {
+    margin: '0 0 5px 0',
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#333',
+  },
+  productCategory: {
+    margin: '0 0 5px 0',
+    fontSize: '13px',
+    color: '#666',
+  },
+  productPrice: {
+    margin: 0,
+    fontSize: '18px',
+    fontWeight: 'bold',
+    color: '#0070f3',
+  },
+  deleteButton: {
+    padding: '10px 20px',
+    background: '#dc3545',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+  },
+  noProducts: {
+    textAlign: 'center' as const,
+    padding: '40px',
+    color: '#666',
+    background: '#f5f5f5',
+    borderRadius: '8px',
   },
   footer: {
     textAlign: 'center' as const,
