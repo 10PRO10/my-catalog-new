@@ -7,24 +7,25 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 async function getProducts() {
   try {
-    console.log('🔍 Запрос товаров из Supabase...')
     const { data, error } = await supabase
       .from('products')
       .select('*')
       .order('id', { ascending: false })
     
     if (error) {
-      console.error('❌ Ошибка Supabase:', error)
+      console.error('Supabase error:', error)
       return []
     }
     
-    console.log('✅ Товаров найдено:', data?.length || 0)
     return data || []
   } catch (error) {
-    console.error('❌ Общая ошибка:', error)
+    console.error('Error:', error)
     return []
   }
 }
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function Home({
   searchParams,
@@ -33,7 +34,7 @@ export default async function Home({
 }) {
   const products = await getProducts()
   
-  const searchQuery = searchParams.search?.toLowerCase() || ''
+  const searchQuery = (searchParams.search || '').toLowerCase()
   const selectedCategory = searchParams.category || 'all'
   
   // Получаем все уникальные категории
@@ -66,7 +67,7 @@ export default async function Home({
             type="text"
             name="search"
             placeholder="🔍 Поиск товаров..."
-            defaultValue={searchQuery}
+            defaultValue={searchParams.search}
             style={styles.searchInput}
           />
           <button type="submit" style={styles.searchButton}>
@@ -75,18 +76,23 @@ export default async function Home({
         </form>
         
         <div style={styles.categories}>
-          {categories.map((category: string) => (
-            <Link
-              key={category}
-              href={`/?category=${category}${searchQuery ? `&search=${searchQuery}` : ''}`}
-              style={{
-                ...styles.categoryButton,
-                ...(selectedCategory === category ? styles.categoryButtonActive : {}),
-              }}
-            >
-              {category === 'all' ? '📋 Все' : category}
-            </Link>
-          ))}
+          {categories.map((category: string) => {
+            const isActive = selectedCategory === category
+            const href = `/?category=${category}${searchQuery ? `&search=${searchQuery}` : ''}`
+            
+            return (
+              <Link
+                key={category}
+                href={href}
+                style={{
+                  ...styles.categoryButton,
+                  ...(isActive ? styles.categoryButtonActive : {}),
+                }}
+              >
+                {category === 'all' ? '📋 Все' : category}
+              </Link>
+            )
+          })}
         </div>
       </div>
 
@@ -98,11 +104,6 @@ export default async function Home({
               ? 'В базе данных нет товаров. Добавь через админку!' 
               : 'Попробуй изменить параметры поиска'}
           </p>
-          {products.length > 0 && (
-            <p style={{ fontSize: '12px', color: '#999', marginTop: '10px' }}>
-              Всего товаров в базе: {products.length}
-            </p>
-          )}
         </div>
       ) : (
         <div style={styles.grid}>
@@ -208,7 +209,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#333',
     fontSize: '14px',
     cursor: 'pointer',
-    transition: 'all 0.2s',
   },
   categoryButtonActive: {
     background: '#0070f3',
