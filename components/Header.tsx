@@ -7,53 +7,76 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <header style={styles.header}>
-      <div style={styles.container}>
-        {/* Логотип */}
-        <Link href="/" style={styles.logo}>
-          📦 Наш Каталог
-        </Link>
-
-        {/* Десктопное меню */}
-        <nav style={styles.desktopNav}>
-          <Link href="/" style={styles.desktopLink}>
-            🏠 Главная
+    <>
+      <header style={styles.header}>
+        <div style={styles.container}>
+          {/* Логотип */}
+          <Link href="/" style={styles.logo}>
+            📦 Наш Каталог
           </Link>
-          <Link href="/login" style={styles.loginButton}>
-            Вход для админа
-          </Link>
-        </nav>
 
-        {/* Кнопка мобильного меню */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          style={styles.mobileButton}
-          aria-label="Меню"
-        >
-          {mobileMenuOpen ? '✕' : '☰'}
-        </button>
-      </div>
+          {/* Десктопное меню */}
+          <nav style={styles.desktopNav} className="desktop-nav">
+            <Link href="/" style={styles.desktopLink}>
+              🏠 Главная
+            </Link>
+            <Link href="/login" style={styles.loginButton}>
+              Вход для админа
+            </Link>
+          </nav>
 
-      {/* Мобильное меню */}
-      {mobileMenuOpen && (
-        <div style={styles.mobileMenu}>
-          <Link
-            href="/"
-            style={styles.mobileLink}
-            onClick={() => setMobileMenuOpen(false)}
+          {/* Кнопка мобильного меню */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            style={styles.mobileButton}
+            className="mobile-button"
+            aria-label="Меню"
           >
-            🏠 Главная
-          </Link>
-          <Link
-            href="/login"
-            style={styles.mobileLink}
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            🔐 Вход для админа
-          </Link>
+            {mobileMenuOpen ? '✕' : '☰'}
+          </button>
         </div>
-      )}
-    </header>
+
+        {/* Мобильное меню */}
+        {mobileMenuOpen && (
+          <div style={styles.mobileMenu} className="mobile-menu">
+            <Link
+              href="/"
+              style={styles.mobileLink}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              🏠 Главная
+            </Link>
+            <Link
+              href="/login"
+              style={styles.mobileLink}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              🔐 Вход для админа
+            </Link>
+          </div>
+        )}
+      </header>
+
+      {/* Стили для мобильных */}
+      <style jsx global>{`
+        @media (max-width: 768px) {
+          .desktop-nav {
+            display: none !important;
+          }
+          .mobile-button {
+            display: block !important;
+          }
+        }
+        @media (min-width: 769px) {
+          .mobile-button {
+            display: none !important;
+          }
+          .mobile-menu {
+            display: none !important;
+          }
+        }
+      `}</style>
+    </>
   )
 }
 
@@ -75,7 +98,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: 'center',
   },
   logo: {
-    fontSize: '24px',
+    fontSize: '20px',
     fontWeight: 'bold',
     color: '#333',
     textDecoration: 'none',
@@ -110,7 +133,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: '5px 10px',
   },
   mobileMenu: {
-    display: 'none',
     flexDirection: 'column',
     padding: '20px',
     background: '#fff',
@@ -125,23 +147,4 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: '10px 0',
     borderBottom: '1px solid #f0f0f0',
   },
-}
-
-// Медиа-запрос для мобильных устройств (добавляем через style тег)
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style')
-  style.textContent = `
-    @media (max-width: 768px) {
-      .desktop-nav {
-        display: none !important;
-      }
-      .mobile-button {
-        display: block !important;
-      }
-      .mobile-menu {
-        display: flex !important;
-      }
-    }
-  `
-  document.head.appendChild(style)
 }

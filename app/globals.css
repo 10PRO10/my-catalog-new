@@ -8,7 +8,14 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Медиа-запросы для мобильных */
+/* Скрываем мобильную кнопку на десктопе */
+@media (min-width: 769px) {
+  .mobile-button {
+    display: none !important;
+  }
+}
+
+/* Показываем мобильное меню только на мобильных */
 @media (max-width: 768px) {
   .desktop-nav {
     display: none !important;
@@ -16,19 +23,5 @@ body {
   
   .mobile-button {
     display: block !important;
-  }
-  
-  .mobile-menu {
-    display: flex !important;
-  }
-}
-
-@media (min-width: 769px) {
-  .mobile-button {
-    display: none !important;
-  }
-  
-  .mobile-menu {
-    display: none !important;
   }
 }
