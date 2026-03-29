@@ -52,9 +52,7 @@ export default async function Home() {
                   src={product.image_url}
                   alt={product.name}
                   style={styles.image}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=No+Image'
-                  }}
+                  // ❌ УБРАЛ onError - нельзя в Server Component!
                 />
               </div>
               <div style={styles.cardContent}>
