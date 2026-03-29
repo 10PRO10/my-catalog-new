@@ -84,10 +84,10 @@ const styles: { [key: string]: React.CSSProperties } = {
   header: {
     background: '#fff',
     borderBottom: '1px solid #eaeaea',
-    position: 'sticky' as const,
-    top: 0,
-    zIndex: 1000,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    // УБРАЛ: position: 'sticky'
+    // УБРАЛ: top: 0
+    // УБРАЛ: zIndex: 1000
+    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
   },
   container: {
     maxWidth: '1200px',
