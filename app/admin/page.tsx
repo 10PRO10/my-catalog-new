@@ -14,6 +14,7 @@ export default function Admin() {
   const [message, setMessage] = useState('')
   const [user, setUser] = useState<any>(null)
   const [products, setProducts] = useState<any[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -106,6 +107,18 @@ export default function Admin() {
     router.push('/login')
     router.refresh()
   }
+
+  // Фильтрация товаров по поиску
+  const filteredProducts = products.filter((product: any) => {
+    const query = searchQuery.toLowerCase().trim()
+    if (!query) return true
+    
+    return (
+      product.name.toLowerCase().includes(query) ||
+      product.description.toLowerCase().includes(query) ||
+      (product.category && product.category.toLowerCase().includes(query))
+    )
+  })
 
   if (!user) {
     return (
@@ -221,15 +234,35 @@ export default function Admin() {
           </form>
         </section>
 
-        {/* Список товаров с удалением */}
+        {/* Поиск товаров */}
         <section style={styles.section}>
-          <h2 style={styles.sectionTitle}>📦 Товары ({products.length})</h2>
+          <h2 style={styles.sectionTitle}>📦 Товары ({filteredProducts.length} из {products.length})</h2>
           
-          {products.length === 0 ? (
-            <p style={styles.noProducts}>Товаров пока нет</p>
+          <div style={styles.searchContainer}>
+            <input
+              type="text"
+              placeholder="🔍 Поиск товаров по названию, описанию или категории..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={styles.searchInput}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={styles.clearSearchButton}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {filteredProducts.length === 0 ? (
+            <p style={styles.noProducts}>
+              {products.length === 0 ? 'Товаров пока нет' : 'Товары не найдены'}
+            </p>
           ) : (
             <div style={styles.productsList}>
-              {products.map((product: any) => (
+              {filteredProducts.map((product: any) => (
                 <div key={product.id} style={styles.productItem}>
                   <img
                     src={product.image_url}
@@ -240,6 +273,7 @@ export default function Admin() {
                     <h3 style={styles.productName}>{product.name}</h3>
                     <p style={styles.productCategory}>📋 {product.category || 'Без категории'}</p>
                     <p style={styles.productPrice}>{product.price.toLocaleString('ru-RU')} ₽</p>
+                    <p style={styles.productDescription}>{product.description}</p>
                   </div>
                   <button
                     onClick={() => handleDeleteProduct(product.id, product.name)}
@@ -375,6 +409,33 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '8px',
     cursor: 'not-allowed',
   },
+  searchContainer: {
+    position: 'relative' as const,
+    marginBottom: '20px',
+  },
+  searchInput: {
+    width: '100%',
+    padding: '12px 45px 12px 16px',
+    fontSize: '15px',
+    border: '2px solid #e1e1e1',
+    borderRadius: '8px',
+    outline: 'none',
+  },
+  clearSearchButton: {
+    position: 'absolute' as const,
+    right: '10px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    background: '#dc3545',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '50%',
+    width: '30px',
+    height: '30px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    fontWeight: 'bold',
+  },
   productsList: {
     display: 'flex',
     flexDirection: 'column',
@@ -410,10 +471,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#666',
   },
   productPrice: {
-    margin: 0,
+    margin: '0 0 5px 0',
     fontSize: '18px',
     fontWeight: 'bold',
     color: '#0070f3',
+  },
+  productDescription: {
+    margin: 0,
+    fontSize: '13px',
+    color: '#888',
+    lineHeight: '1.4',
   },
   deleteButton: {
     padding: '10px 20px',
