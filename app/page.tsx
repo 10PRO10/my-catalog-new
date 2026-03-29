@@ -43,12 +43,10 @@ export default async function Home({
   
   // Фильтруем товары
   const filteredProducts = products.filter((product: any) => {
-    // Поиск по названию и описанию
     const matchesSearch = !searchQuery || 
       product.name.toLowerCase().includes(searchQuery) ||
       product.description.toLowerCase().includes(searchQuery)
     
-    // Фильтр по категории
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory
     
     return matchesSearch && matchesCategory
@@ -56,13 +54,6 @@ export default async function Home({
 
   return (
     <main style={styles.main}>
-      <header style={styles.header}>
-        <h1 style={styles.title}>📦 Наш Каталог</h1>
-        <Link href="/login" style={styles.loginLink}>
-          Вход для админа
-        </Link>
-      </header>
-
       {/* Поиск и фильтры */}
       <div style={styles.filters}>
         <form style={styles.searchForm} method="GET" action="/">
@@ -171,27 +162,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     maxWidth: '1200px',
     margin: '0 auto',
   },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '30px',
-    paddingBottom: '20px',
-    borderBottom: '2px solid #eaeaea',
-  },
-  title: {
-    margin: 0,
-    fontSize: '32px',
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  loginLink: {
-    color: '#0070f3',
-    textDecoration: 'none',
-    padding: '10px 20px',
-    border: '1px solid #0070f3',
-    borderRadius: '6px',
-  },
   filters: {
     marginBottom: '30px',
     display: 'flex',
@@ -259,6 +229,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '8px',
     fontSize: '14px',
     color: '#0070f3',
+    marginBottom: '20px',
   },
   resetLink: {
     color: '#dc3545',
