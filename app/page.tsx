@@ -7,19 +7,21 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 async function getProducts() {
   try {
+    console.log('🔍 Запрос товаров из Supabase...')
     const { data, error } = await supabase
       .from('products')
       .select('*')
       .order('id', { ascending: false })
     
     if (error) {
-      console.error('Supabase error:', error)
+      console.error('❌ Ошибка Supabase:', error)
       return []
     }
     
+    console.log('✅ Товаров найдено:', data?.length || 0)
     return data || []
   } catch (error) {
-    console.error('Error:', error)
+    console.error('❌ Общая ошибка:', error)
     return []
   }
 }
@@ -92,8 +94,15 @@ export default async function Home({
         <div style={styles.noProducts}>
           <p>📭 Товары не найдены</p>
           <p style={{ fontSize: '14px', color: '#666', marginTop: '10px' }}>
-            Попробуй изменить параметры поиска
+            {products.length === 0 
+              ? 'В базе данных нет товаров. Добавь через админку!' 
+              : 'Попробуй изменить параметры поиска'}
           </p>
+          {products.length > 0 && (
+            <p style={{ fontSize: '12px', color: '#999', marginTop: '10px' }}>
+              Всего товаров в базе: {products.length}
+            </p>
+          )}
         </div>
       ) : (
         <div style={styles.grid}>
