@@ -30,22 +30,25 @@ export const revalidate = 0
 export default async function Home({
   searchParams,
 }: {
-  searchParams: { search?: string; category?: string }
+  searchParams: Promise<{ search?: string; category?: string }>
 }) {
+  const params = await searchParams
   const products = await getProducts()
   
-  const searchQuery = (searchParams.search || '').toLowerCase()
-  const selectedCategory = searchParams.category || 'all'
+  const searchQuery = (params.search || '').toLowerCase().trim()
+  const selectedCategory = params.category || 'all'
   
   // Получаем все уникальные категории
   const categories = ['all', ...new Set(products.map((p: any) => p.category).filter(Boolean))]
   
   // Фильтруем товары
   const filteredProducts = products.filter((product: any) => {
+    // Поиск по названию и описанию
     const matchesSearch = !searchQuery || 
       product.name.toLowerCase().includes(searchQuery) ||
       product.description.toLowerCase().includes(searchQuery)
     
+    // Фильтр по категории
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory
     
     return matchesSearch && matchesCategory
@@ -62,23 +65,28 @@ export default async function Home({
 
       {/* Поиск и фильтры */}
       <div style={styles.filters}>
-        <form style={styles.searchForm}>
+        <form style={styles.searchForm} method="GET" action="/">
           <input
             type="text"
             name="search"
             placeholder="🔍 Поиск товаров..."
-            defaultValue={searchParams.search}
+            defaultValue={params.search}
             style={styles.searchInput}
           />
           <button type="submit" style={styles.searchButton}>
             Найти
           </button>
+          {params.search && (
+            <Link href="/" style={styles.clearButton}>
+              ✕
+            </Link>
+          )}
         </form>
         
         <div style={styles.categories}>
           {categories.map((category: string) => {
             const isActive = selectedCategory === category
-            const href = `/?category=${category}${searchQuery ? `&search=${searchQuery}` : ''}`
+            const href = `/?category=${category}${params.search ? `&search=${params.search}` : ''}`
             
             return (
               <Link
@@ -96,6 +104,20 @@ export default async function Home({
         </div>
       </div>
 
+      {/* Информация о фильтрах */}
+      {(searchQuery || selectedCategory !== 'all') && (
+        <div style={styles.filterInfo}>
+          <span>
+            {searchQuery && `🔍 Поиск: "${params.search}"`}
+            {searchQuery && selectedCategory !== 'all' && ' | '}
+            {selectedCategory !== 'all' && `📋 Категория: ${selectedCategory}`}
+          </span>
+          <Link href="/" style={styles.resetLink}>
+            Сбросить фильтры
+          </Link>
+        </div>
+      )}
+
       {filteredProducts.length === 0 ? (
         <div style={styles.noProducts}>
           <p>📭 Товары не найдены</p>
@@ -103,6 +125,9 @@ export default async function Home({
             {products.length === 0 
               ? 'В базе данных нет товаров. Добавь через админку!' 
               : 'Попробуй изменить параметры поиска'}
+          </p>
+          <p style={{ fontSize: '12px', color: '#999', marginTop: '10px' }}>
+            Всего товаров в базе: {products.length}
           </p>
         </div>
       ) : (
@@ -195,6 +220,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     cursor: 'pointer',
     fontWeight: '600',
   },
+  clearButton: {
+    padding: '12px 20px',
+    fontSize: '16px',
+    background: '#dc3545',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    textDecoration: 'none',
+    fontWeight: '600',
+  },
   categories: {
     display: 'flex',
     gap: '10px',
@@ -214,6 +249,21 @@ const styles: { [key: string]: React.CSSProperties } = {
     background: '#0070f3',
     color: '#fff',
     borderColor: '#0070f3',
+  },
+  filterInfo: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '12px 16px',
+    background: '#f0f7ff',
+    borderRadius: '8px',
+    fontSize: '14px',
+    color: '#0070f3',
+  },
+  resetLink: {
+    color: '#dc3545',
+    textDecoration: 'none',
+    fontWeight: '600',
   },
   grid: {
     display: 'grid',
