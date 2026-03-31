@@ -52,6 +52,8 @@ export default async function Home({
     return matchesSearch && matchesCategory
   })
 
+  const currentYear = new Date().getFullYear()
+
   return (
     <main style={styles.main}>
       {/* Поиск и фильтры */}
@@ -148,7 +150,7 @@ export default async function Home({
       )}
 
       <footer style={styles.footer}>
-        <p>© 2024 Каталог товаров</p>
+        <p>© {currentYear} Каталог товаров</p>
       </footer>
     </main>
   )
